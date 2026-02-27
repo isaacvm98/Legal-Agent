@@ -41,6 +41,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+def get_api_key() -> str | None:
+    """Obtiene la API key en orden: sidebar > st.secrets > .env"""
+    # 1. Input manual del usuario en sidebar
+    key = st.session_state.get("api_key")
+    if key:
+        return key
+    # 2. Streamlit secrets (configurado en Streamlit Cloud)
+    try:
+        key = st.secrets.get("OPENAI_API_KEY")
+        if key:
+            return key
+    except FileNotFoundError:
+        pass
+    # 3. Variable de entorno / .env
+    return os.getenv("OPENAI_API_KEY")
+
+
 def init_session_state():
     """Inicializa el estado de la sesión."""
     defaults = {
@@ -198,7 +215,7 @@ def render_review():
 
     # Generar contrato si no existe
     if not st.session_state.generated_contract:
-        api_key = st.session_state.get("api_key") or os.getenv("OPENAI_API_KEY")
+        api_key = get_api_key()
         if not api_key:
             st.error(
                 "Ingresa tu API key de OpenAI en la barra lateral para generar el contrato."
@@ -304,7 +321,7 @@ def render_chat():
         with st.chat_message("assistant"):
             with st.spinner("Analizando..."):
                 try:
-                    api_key = st.session_state.get("api_key") or os.getenv("OPENAI_API_KEY")
+                    api_key = get_api_key()
                     response = review_contract(
                         st.session_state.generated_contract,
                         user_input,
@@ -331,16 +348,27 @@ def render_sidebar():
 
         st.divider()
 
-        # API Key input
-        api_key_input = st.text_input(
-            "API Key de OpenAI",
-            type="password",
-            placeholder="sk-...",
-            value=st.session_state.get("api_key", ""),
-            help="Tu key no se almacena. Solo se usa durante esta sesión.",
-        )
-        if api_key_input:
-            st.session_state.api_key = api_key_input
+        # API Key: solo mostrar input si no hay key en secrets o .env
+        has_configured_key = False
+        try:
+            has_configured_key = bool(st.secrets.get("OPENAI_API_KEY"))
+        except FileNotFoundError:
+            pass
+        if not has_configured_key:
+            has_configured_key = bool(os.getenv("OPENAI_API_KEY"))
+
+        if has_configured_key:
+            st.success("API Key configurada", icon="🔑")
+        else:
+            api_key_input = st.text_input(
+                "API Key de OpenAI",
+                type="password",
+                placeholder="sk-...",
+                value=st.session_state.get("api_key", ""),
+                help="Tu key no se almacena. Solo se usa durante esta sesión.",
+            )
+            if api_key_input:
+                st.session_state.api_key = api_key_input
 
         st.divider()
 
