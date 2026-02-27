@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source .venv/Scripts/activate)",
+      "Bash(python -c \":*)",
+      "Bash(python:*)",
+      "Bash(pip install antiword)",
+      "Bash(pip install doc2txt)",
+      "Bash(pip install striprtf mammoth)",
+      "Bash(pip install pywin32)",
+      "Bash(pip install streamlit openai python-dotenv python-docx)",
+      "Bash(streamlit run app.py)"
+    ]
+  }
+}
